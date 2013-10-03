@@ -23,6 +23,22 @@ function page_section_field_presave($entity_type, $entity, $field, $instance, $l
   }
 }
 
+function page_section_field_prepare_translation($entity_type, $entity, $field, $instance, $langcode, &$items, $source_entity, $source_langcode) {
+  $info = entity_get_info('page_section');
+  foreach ($items as $delta => $item) {
+    if (isset($item['sid'])) {
+      $page_section_source = page_section_load($item['sid']);
+      unset($items[$delta]['sid']);
+
+      $page_section_new = entity_create('page_section', array('type' => $page_section_source->type));
+      field_attach_prepare_translation('page_section', $page_section_new, $langcode, $page_section_source, $source_langcode);
+
+      $items[$delta]['section'] = $page_section_new;
+    }
+  }
+}
+
+
 function page_section_field_is_empty($item, $field) {
   if (!empty($item['sid'])) {
     return FALSE;
