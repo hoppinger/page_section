@@ -185,6 +185,7 @@ function page_section_type_save($type) {
 
   // reset the cache
   page_section_type_info(TRUE);
+  menu_rebuild();
 }
 
 /**
