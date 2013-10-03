@@ -1,0 +1,4 @@
+name = Page Section
+core = 7.x
+
+dependencies[] = entity

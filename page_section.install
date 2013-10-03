@@ -1,0 +1,70 @@
+<?php
+
+function page_section_schema() {
+  $schema = array();
+
+  $schema['page_section'] = array(
+    'fields' => array(
+      'sid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the node was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'page_section_changed'        => array('changed'),
+      'page_section_created'        => array('created'),
+      'page_section_type'           => array(array('type', 4)),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  $schema['page_section_type'] = array(
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      )
+    ),
+    'primary key' => array('name'),
+  );
+
+  return $schema;
+}
+
+function page_section_field_schema($field) {
+  return array(
+    'columns' => array(
+      'sid' => array(
+        'type' => 'int',
+        'not null' => FALSE
+      ),
+    ),
+  );
+}

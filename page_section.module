@@ -1,0 +1,239 @@
+<?php
+
+define('PAGE_SECTION_NOT_SAVED', 0x0000);
+define('PAGE_SECTION_CODE', 0x0001);
+define('PAGE_SECTION_DATABASE', 0x0002);
+define('PAGE_SECTION_OVERRIDE', PAGE_SECTION_CODE | PAGE_SECTION_DATABASE);
+
+require_once drupal_get_path('module', 'page_section') . '/page_section.field.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function page_section_menu() {
+  $items = array();
+
+  $items['admin/structure/page-sections'] = array(
+    'title' => 'Page sections',
+    'description' => 'Manage page section types',
+    'page callback' => 'page_section_overview_types',
+    'access arguments' => array('administer page section types'),
+    'file' => 'page_section.admin.inc',
+  );
+  $items['admin/structure/page-sections/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  $items['admin/structure/page-sections/add'] = array(
+    'title' => 'Add page section type',
+    'page callback' => 'page_section_type_add_page',
+    'access arguments' => array('administer page section types'),
+    'file' => 'page_section.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  $items['admin/structure/page-sections/manage/%page_section_type'] = array(
+    'title' => 'Edit page section type',
+    'title callback' => 'page_section_type_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'page_section_type_page',
+    'page arguments' => array(4),
+    'access arguments' => array('administer page section types'),
+    'file' => 'page_section.admin.inc',
+  );
+  $items['admin/structure/page-sections/manage/%page_section_type/edit'] = array(
+    'title' => t('Edit'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+function page_section_theme() {
+  return array(
+    'page_section' => array(
+      'render element' => 'elements',
+      'template' => 'page-section',
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function page_section_entity_info() {
+  $entities = array();
+
+  $entities['page_section'] = array(
+    'label' => t('Page section'),
+    'controller class' => 'EntityAPIController',
+    'base table' => 'page_section',
+    'uri callback' => 'page_section_uri',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+      'id' => 'sid',
+      'bundle' => 'type',
+      'label' => 'title',
+    ),
+    'bundle keys' => array(
+      'bundle' => 'name'
+    ),
+    'bundles' => array(),
+    'view modes' => array(
+      'full' => array(
+        'label' => t('Full content'),
+        'custom settings' => FALSE,
+      ),
+    ),
+  );
+
+  foreach (page_section_type_info() as $type => $info) {
+    $entities['page_section']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/page-sections/manage/%page_section_type',
+        'real path' => 'admin/structure/page-sections/manage/' . str_replace('_', '-', $type),
+        'bundle argument' => 4,
+        'access arguments' => array('administer page section types'),
+      ),
+    );
+  }
+
+  return $entities;
+}
+
+/**
+ * Get all page section types.
+ */
+function page_section_type_info($reset = FALSE) {
+  $info = &drupal_static(__FUNCTION__);
+
+  if ($reset || !isset($info)) {
+    if (!$reset && ($cache = cache_get(__FUNCTION__))) {
+      $info = $cache->data;
+    }
+
+    if ($reset || !isset($info)) {
+      $info = _page_section_type_info();
+      cache_set(__FUNCTION__, $info);
+    }
+  }
+
+  return $info;
+}
+
+function _page_section_type_info() {
+  $info = array();
+
+  foreach (module_implements(__FUNCTION__) as $module) {
+    $result = module_invoke($module, __FUNCTION__);
+    if (empty($result)) {
+      continue;
+    }
+    foreach ($result as $name => $_info) {
+      $_info['name'] = $name;
+      $_info['module'] = $module;
+      $_info['status'] = PAGE_SECTION_CODE;
+      $info[$key] = (object) $_info;
+    }
+  }
+
+  $result = db_select('page_section_type', 't')
+    ->fields('t')
+    ->execute();
+  foreach ($result as $row) {
+    $info[$row->name] = (object) array(
+      'name' => $row->name,
+      'label' => $row->label,
+      'module' => 'page_section',
+      'status' => isset($info[$row->name]) ? PAGE_SECTION_OVERRIDE : PAGE_SECTION_DATABASE,
+    );
+  }
+
+  return $info;
+}
+
+/**
+ * Menu load callback. Page section type.
+ */
+function page_section_type_load($key) {
+  $types = page_section_type_info();
+  $key = strtr($key, array('-' => '_'));
+
+  return isset($types[$key]) ? $types[$key] : FALSE;
+}
+
+/**
+ * Menu title callback. Page section type.
+ */
+function page_section_type_page_title($type) {
+  return $type->name;
+}
+
+function page_section_type_save($type) {
+  if ($type->status & PAGE_SECTION_DATABASE) {
+    drupal_write_record('page_section_type', $type, array('name'));
+  }
+  else {
+    // insert
+    drupal_write_record('page_section_type', $type);
+    $type->status |= PAGE_SECTION_DATABASE;
+  }
+
+  // reset the cache
+  page_section_type_info(TRUE);
+}
+
+/**
+ * Entity load callbacks.
+ */
+function page_section_load_multiple($sids) {
+  return entity_load('page_section', $sids);
+}
+function page_section_load($sid) {
+  $sections = page_section_load_multiple(array($sid));
+  return $sections ? reset($sections) : FALSE;
+}
+
+/**
+ * Entity save callback.
+ */
+function page_section_save($section) {
+  if (empty($section->created)) {
+    $section->created = REQUEST_TIME;
+  }
+  $section->changed = REQUEST_TIME;
+
+  return entity_save('page_section', $section);
+}
+
+/**
+ * Entity delete callbacks.
+ */
+function page_section_delete_multiple($sids) {
+  return entity_delete_multiple('page_section', $sids);
+}
+function page_section_delete($sid) {
+  return entity_delete('page_section', $sid);
+}
+
+/**
+ * Entity view callbacks.
+ */
+function page_section_view($section, $view_mode = 'full', $page = NULL) {
+  return entity_view('page_section', array($section), $view_mode);
+}
+function page_section_view_multiple($sections, $view_mode = 'full', $page = NULL) {
+  return entity_view('page_section', $sections, $view_mode, NULL, $page);
+}
+
+/**
+ * Entity create callback.
+ */
+function page_section_create($values) {
+  $result = entity_create('page_section', $values);
+  return $result;
+}
