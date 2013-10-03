@@ -170,7 +170,7 @@ function page_section_type_load($key) {
  * Menu title callback. Page section type.
  */
 function page_section_type_page_title($type) {
-  return $type->name;
+  return $type->label;
 }
 
 function page_section_type_save($type) {
