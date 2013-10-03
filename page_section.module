@@ -109,16 +109,16 @@ function page_section_entity_info() {
  * Get all page section types.
  */
 function page_section_type_info($reset = FALSE) {
-  $info = &drupal_static(__FUNCTION__);
+  $info = &drupal_static('page_section_type_info');
 
   if ($reset || !isset($info)) {
-    if (!$reset && ($cache = cache_get(__FUNCTION__))) {
+    if (!$reset && ($cache = cache_get('page_section_type_info'))) {
       $info = $cache->data;
     }
 
     if ($reset || !isset($info)) {
       $info = _page_section_type_info();
-      cache_set(__FUNCTION__, $info);
+      cache_set('page_section_type_info', $info);
     }
   }
 
@@ -128,8 +128,8 @@ function page_section_type_info($reset = FALSE) {
 function _page_section_type_info() {
   $info = array();
 
-  foreach (module_implements(__FUNCTION__) as $module) {
-    $result = module_invoke($module, __FUNCTION__);
+  foreach (module_implements('page_section_type_info') as $module) {
+    $result = module_invoke($module, 'page_section_type_info');
     if (empty($result)) {
       continue;
     }
@@ -137,7 +137,7 @@ function _page_section_type_info() {
       $_info['name'] = $name;
       $_info['module'] = $module;
       $_info['status'] = PAGE_SECTION_CODE;
-      $info[$key] = (object) $_info;
+      $info[$name] = (object) $_info;
     }
   }
 
