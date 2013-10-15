@@ -238,3 +238,19 @@ function page_section_create($values) {
   $result = entity_create('page_section', $values);
   return $result;
 }
+
+function page_section_page_section_view($entity, $view_mode, $langcode) {
+  $entity->content['#theme'] = 'page_section';
+}
+
+function template_preprocess_page_section(&$variables) {
+  $variables['content'] = array();
+  foreach (element_children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+
+  $variables['classes_array'][] = drupal_html_class('page_section_' . $variables['elements']['#entity']->type);
+
+  // Add suggestions.
+  $variables['theme_hook_suggestions'][] = 'page_section__' . $variables['elements']['#entity']->type;
+}
