@@ -204,31 +204,43 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
     $field_name = $element['#field_name'];
     $language = $element['#language'];
 
+    $field_state = field_form_get_state($field_parents, $field_name, $language, $form_state);
+    $field = $field_state['field'];
+
     $id_prefix = implode('-', array_merge($parents, array($field_name)));
     $wrapper_id = drupal_html_id($id_prefix . '-add-more-wrapper');
-    $element += array(
-      '#prefix' => '<div id="' . $wrapper_id . '">',
-      '#suffix' => '</div>',
-      '#element_validate' => array('page_section_field_widget_page_section_form_validate'),
-
-      '#theme' => 'field_multiple_value_form',
-      '#field_name' => $field['field_name'],
-      '#cardinality' => $field['cardinality'],
-    );
 
     if ($recursion++ > 3) {
       drupal_set_message(t('The page section form has not been embedded to avoid recursive loopage_section.'), 'error');
       return $element;
     }
 
-    $field_state = field_form_get_state($field_parents, $field_name, $language, $form_state);
-    $field = $field_state['field'];
-
     if (!isset($field_state['count_items'])) {
       $field_state['count_items'] = count($items);
     }
 
     $multiple = $field['cardinality'] > 1 || $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED;
+
+    $element += array(
+      '#prefix' => '<div id="' . $wrapper_id . '">',
+      '#suffix' => '</div>',
+      '#element_validate' => array('page_section_field_widget_page_section_form_validate'),
+    );
+
+    if ($multiple) {
+      $element += array(
+        '#theme' => 'field_multiple_value_form',
+        '#field_name' => $field['field_name'],
+        '#cardinality' => $field['cardinality'],
+      );
+    } else {
+      $element += array(
+        '#type' => 'fieldset',
+        '#title' => $field['field_name'],
+      );
+    }
+
+    
     for($delta = 0; $delta < $field_state['count_items']; $delta++) {
       $delta_parents = array_merge($field_parents, array($field_name, $language, $delta));
 
