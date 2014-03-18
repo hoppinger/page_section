@@ -247,28 +247,28 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
 
       field_attach_form('page_section', $page_section, $element[$delta], $form_state, $language);
 
-      if ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) {
-        $element[$delta]['remove_button'] = array(
-          '#delta' => $delta,
-          '#name' => implode('_', $delta_parents) . '_remove_button',
-          '#type' => 'submit',
-          '#value' => t('Remove @bundle', array('@bundle' => $page_section_types[$element[$delta]['#bundle']]->label)),
-          '#validate' => array(),
-          '#submit' => array('page_section_remove_submit'),
-          '#limit_validation_errors' => array(),
-          '#ajax' => array(
-            'callback' => 'page_section_remove_js',
-            'wrapper' => $wrapper_id,
-            'effect' => 'fade',
-          ),
-          '#weight' => 1000,
-        );
-      }
+      $element[$delta]['remove_button'] = array(
+        '#delta' => $delta,
+        '#name' => implode('_', $delta_parents) . '_remove_button',
+        '#type' => 'submit',
+        '#value' => t('Remove @bundle', array('@bundle' => $page_section_types[$element[$delta]['#bundle']]->label)),
+        '#validate' => array(),
+        '#submit' => array('page_section_remove_submit'),
+        '#limit_validation_errors' => array(),
+        '#ajax' => array(
+          'callback' => 'page_section_remove_js',
+          'wrapper' => $wrapper_id,
+          'effect' => 'fade',
+        ),
+        '#weight' => 1000,
+      );
     }
 
     field_form_set_state($field_parents, $field_name, $language, $form_state, $field_state);
 
-    $element['add_more'] = array();
+    $element['add_more'] = array(
+      '#access' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) || ($field['cardinality'] > $field_state['count_items']),
+    );
 
     foreach (page_section_type_info() as $type => $info) {
       $element['add_more'][$type] = array(
@@ -300,13 +300,20 @@ function page_section_add_more_submit($form, &$form_state) {
   $langcode = $element['#language'];
   $parents = $element['#field_parents'];
 
+  $form_state['rebuild'] = TRUE;
+
   // Increment the items count.
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
+  $field = $field_state['field'];
+  if ($field['cardinality'] != UNLIMITED) {
+    if ($field_state['count_items'] >= $field['cardinality']) {
+      return;
+    }
+  }
+
   $field_state['count_items']++;
   $field_state['section'][$field_state['count_items'] -1 ] = page_section_create(array('type' => $button['#page_section_type']));
-  field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);
-
-  $form_state['rebuild'] = TRUE;
+  field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);  
 }
 
 function page_section_add_more_js($form, $form_state) {
@@ -320,9 +327,6 @@ function page_section_add_more_js($form, $form_state) {
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
 
   $field = $field_state['field'];
-  if ($field['cardinality'] != FIELD_CARDINALITY_UNLIMITED) {
-    return;
-  }
 
   // Add a DIV around the delta receiving the Ajax effect.
   $delta = $field_state['count_items']-1;
@@ -408,9 +412,6 @@ function page_section_remove_js($form, $form_state) {
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
 
   $field = $field_state['field'];
-  if ($field['cardinality'] != FIELD_CARDINALITY_UNLIMITED) {
-    return;
-  }
 
   return $element;
 }
