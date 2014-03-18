@@ -14,6 +14,28 @@ function page_section_field_info() {
   );
 }
 
+function page_section_field_settings_form($field, $instance, $has_data) {
+  $settings = $field['settings'];
+
+  $types = page_section_type_info();
+  $type_names = array();
+  foreach ($types as $key => $info) {
+    $type_names[$key] = $info->label;
+  }
+
+  $form = array();
+  $form['referenceable_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Page section types that can be referenced'),
+    '#description' => t('If not types are selected, all types can be referenced'),
+    '#multiple' => TRUE,
+    '#default_value' => empty($settings['referenceable_types']) ? array() : $settings['referenceable_types'],
+    '#options' => array_map('check_plain', $type_names),
+  );
+
+  return $form;
+}
+
 function page_section_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as &$item) {
     if (isset($item['section'])) {
@@ -200,6 +222,7 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
     }
 
     $field_state = field_form_get_state($field_parents, $field_name, $language, $form_state);
+    $field = $field_state['field'];
 
     if (!isset($field_state['count_items'])) {
       $field_state['count_items'] = count($items);
@@ -270,7 +293,13 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       '#access' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) || ($field['cardinality'] > $field_state['count_items']),
     );
 
-    foreach (page_section_type_info() as $type => $info) {
+    $type_info = page_section_type_info();
+    $referenceable_types = empty($field['settings']['referenceable_types']) ? array_keys($type_info) : array_keys(array_filter($field['settings']['referenceable_types']));
+    foreach ($type_info as $type => $info) {
+      if (!in_array($type, $referenceable_types)) {
+        continue;
+      }
+      
       $element['add_more'][$type] = array(
         '#type' => 'submit',
         '#name' => strtr($id_prefix, '-', '_') . '_' . $type . '_add_more',
