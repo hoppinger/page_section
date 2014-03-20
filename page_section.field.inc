@@ -346,7 +346,7 @@ function page_section_add_more_submit($form, &$form_state) {
   // Increment the items count.
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
   $field = $field_state['field'];
-  if ($field['cardinality'] != UNLIMITED) {
+  if ($field['cardinality'] != FIELD_CARDINALITY_UNLIMITED) {
     if ($field_state['count_items'] >= $field['cardinality']) {
       return;
     }
