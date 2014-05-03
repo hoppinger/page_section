@@ -315,7 +315,7 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       $element['add_more'][$type] = array(
         '#type' => 'submit',
         '#name' => strtr($id_prefix, '-', '_') . '_' . $type . '_add_more',
-        '#value' => t('Add @type', array('@type' => t($info->label))),
+        '#value' => t('Add !type', array('!type' => t($info->label)))
         '#page_section_type' => $type,
         '#attributes' => array('class' => array('field-add-more-submit')),
         '#limit_validation_errors' => array(array_merge($parents, array($field_name, $langcode))),
