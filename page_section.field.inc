@@ -272,7 +272,6 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         elseif (!empty($item['sid'])) {
           $page_section = page_section_load($item['sid']);
         } else {
-          $recursion--;
           continue;
         }
 
@@ -328,6 +327,8 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         ), 
       );
     }
+
+    $recursion--;
   }
 
   return $element;
