@@ -1,0 +1,5 @@
+msgid "Add !type"
+msgstr "!type toevoegen"
+
+msgid "Remove !bundle"
+msgstr "!bundle verwijderen"
