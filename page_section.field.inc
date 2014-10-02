@@ -181,7 +181,7 @@ function page_section_field_formatter_settings_summary($field, $instance, $view_
     }
   }
 
-  return implode('<br>', $output);
+  return implode('<br />', $output);
 }
 
 /**
