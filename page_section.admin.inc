@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Provide functions to manage Page Section Types.
+ */
+
+/**
  * Menu callback. Page section types overview.
  */
 function page_section_overview_types() {
@@ -38,12 +43,15 @@ function page_section_overview_types() {
 }
 
 /**
- * Menu callback. Page section type.
+ * Menu callback. Display page section type.
  */
 function page_section_type_page($type) {
   return drupal_get_form('page_section_type_form', $type);
 }
 
+/**
+ * Menu callback. Add Page Section type.
+ */
 function page_section_type_add_page() {
   $type = (object) array(
     'status' => PAGE_SECTION_NOT_SAVED,
@@ -52,6 +60,9 @@ function page_section_type_add_page() {
   return drupal_get_form('page_section_type_form', $type);
 }
 
+/**
+ * Form API callback to edit a page section type.
+ */
 function page_section_type_form($form, &$form_state, $type) {
   $form['#page_section_type'] = $type;
 
@@ -88,6 +99,9 @@ function page_section_type_form($form, &$form_state, $type) {
   return $form;
 }
 
+/**
+ * Form API submit callback for page section type edit form.
+ */
 function page_section_type_form_submit($form, &$form_state) {
   $type = $form['#page_section_type'];
 

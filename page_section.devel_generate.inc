@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Provides the Devel Generate integration for Page Section.
+ */
+
+/**
  * Implements hook_devel_generate().
  */
 function page_section_devel_generate($object, $field, $instance, $bundle) {
@@ -9,8 +14,10 @@ function page_section_devel_generate($object, $field, $instance, $bundle) {
 
     switch ($field['cardinality']) {
       case FIELD_CARDINALITY_UNLIMITED:
-        $max = rand(3, 8); //just an arbitrary number for 'unlimited'
+        // Just an arbitrary number for 'unlimited'.
+        $max = rand(3, 8);
         break;
+
       default:
         $max = $field['cardinality'] - 1;
         break;
@@ -23,11 +30,15 @@ function page_section_devel_generate($object, $field, $instance, $bundle) {
     }
 
     return $object_field;
-  } else {
+  }
+  else {
     return _page_section_devel_generate($object, $field, $instance, $bundle);
   }
 }
 
+/**
+ * Internal function to generate a single page section and field item.
+ */
 function _page_section_devel_generate($object, $field, $instance, $bundle) {
   $types = page_section_type_info();
   if (empty($types)) {

@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @file
+ * Provide the Field integration for Page Section.
+ */
+
+/**
+ * Implements hook_field_info().
+ */
 function page_section_field_info() {
   return array(
     'page_section' => array(
@@ -14,6 +22,9 @@ function page_section_field_info() {
   );
 }
 
+/**
+ * Implements hook_field_settings_form().
+ */
 function page_section_field_settings_form($field, $instance, $has_data) {
   $settings = $field['settings'];
 
@@ -36,6 +47,9 @@ function page_section_field_settings_form($field, $instance, $has_data) {
   return $form;
 }
 
+/**
+ * Implements hook_field_presave().
+ */
 function page_section_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as &$item) {
     if (isset($item['section'])) {
@@ -45,6 +59,9 @@ function page_section_field_presave($entity_type, $entity, $field, $instance, $l
   }
 }
 
+/**
+ * Implements hook_field_prepare_translation().
+ */
 function page_section_field_prepare_translation($entity_type, $entity, $field, $instance, $langcode, &$items, $source_entity, $source_langcode) {
   $info = entity_get_info('page_section');
   foreach ($items as $delta => $item) {
@@ -60,7 +77,9 @@ function page_section_field_prepare_translation($entity_type, $entity, $field, $
   }
 }
 
-
+/**
+ * Implements hook_field_is_empty().
+ */
 function page_section_field_is_empty($item, $field) {
   if (!empty($item['sid'])) {
     return FALSE;
@@ -71,6 +90,9 @@ function page_section_field_is_empty($item, $field) {
   return TRUE;
 }
 
+/**
+ * Determine if a Page Section is empty.
+ */
 function page_section_section_is_empty($section) {
   $instances = field_info_instances('page_section', $section->type);
 
@@ -101,18 +123,24 @@ function page_section_section_is_empty($section) {
   return TRUE;
 }
 
+/**
+ * Implements hook_field_formatter_info().
+ */
 function page_section_field_formatter_info() {
   return array(
     'page_section_view' => array(
       'label' => t('Page sections'),
       'field types' => array('page_section'),
-      'settings' =>  array(
+      'settings' => array(
         'view_mode' => 'full',
       ),
     ),
   );
 }
 
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
 function page_section_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
@@ -138,6 +166,9 @@ function page_section_field_formatter_settings_form($field, $instance, $view_mod
   return $elements;
 }
 
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
 function page_section_field_formatter_settings_summary($field, $instance, $view_mode) {
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
@@ -153,6 +184,9 @@ function page_section_field_formatter_settings_summary($field, $instance, $view_
   return implode('<br>', $output);
 }
 
+/**
+ * Implements hook_field_formatter_view().
+ */
 function page_section_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
   $settings = $display['settings'];
@@ -184,6 +218,9 @@ function page_section_field_formatter_view($entity_type, $entity, $field, $insta
   return $element;
 }
 
+/**
+ * Implements hook_field_widget_info().
+ */
 function page_section_field_widget_info() {
   return array(
     'page_section_form' => array(
@@ -197,6 +234,9 @@ function page_section_field_widget_info() {
   );
 }
 
+/**
+ * Implements hook_field_widget_form().
+ */
 function page_section_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   static $recursion = 0;
 
@@ -237,16 +277,20 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         '#field_name' => $field['field_name'],
         '#cardinality' => $field['cardinality'],
       );
-    } else {
+    }
+    else {
       $element += array(
         '#type' => 'fieldset',
         '#title' => $field['field_name'],
       );
     }
 
-    
-    for($delta = 0; $delta < $field_state['count_items']; $delta++) {
-      $delta_parents = array_merge($field_parents, array($field_name, $language, $delta));
+    for ($delta = 0; $delta < $field_state['count_items']; $delta++) {
+      $delta_parents = array_merge($field_parents, array(
+        $field_name,
+        $language,
+        $delta,
+      ));
 
       $element[$delta] = array(
         '#parents' => $delta_parents,
@@ -272,10 +316,11 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         $item = !empty($items[$delta]) ? $items[$delta] : array();
         if (!empty($item['section'])) {
           $page_section = $item['section'];
-        } 
+        }
         elseif (!empty($item['sid'])) {
           $page_section = page_section_load($item['sid']);
-        } else {
+        }
+        else {
           continue;
         }
 
@@ -314,21 +359,22 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       if (!in_array($type, $referenceable_types)) {
         continue;
       }
-      
+
       $element['add_more'][$type] = array(
         '#type' => 'submit',
         '#name' => strtr($id_prefix, '-', '_') . '_' . $type . '_add_more',
         '#value' => t('Add !type', array('!type' => t($info->label))),
         '#page_section_type' => $type,
         '#attributes' => array('class' => array('field-add-more-submit')),
-        '#limit_validation_errors' => array(array_merge($parents, array($field_name, $langcode))),
-        
+        '#limit_validation_errors' => array(
+          array_merge($parents, array($field_name, $langcode)),
+        ),
         '#submit' => array('page_section_add_more_submit'),
         '#ajax' => array(
           'callback' => 'page_section_add_more_js',
           'wrapper' => $wrapper_id,
           'effect' => 'fade',
-        ), 
+        ),
       );
     }
 
@@ -338,6 +384,9 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
   return $element;
 }
 
+/**
+ * Form API submit callback for adding more Page Sections.
+ */
 function page_section_add_more_submit($form, &$form_state) {
   $button = $form_state['triggering_element'];
 
@@ -358,10 +407,13 @@ function page_section_add_more_submit($form, &$form_state) {
   }
 
   $field_state['count_items']++;
-  $field_state['section'][$field_state['count_items'] -1 ] = page_section_create(array('type' => $button['#page_section_type']));
-  field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);  
+  $field_state['section'][$field_state['count_items'] - 1] = page_section_create(array('type' => $button['#page_section_type']));
+  field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);
 }
 
+/**
+ * Form API Ajax callback for adding more Page Sections.
+ */
 function page_section_add_more_js($form, $form_state) {
   $button = $form_state['triggering_element'];
 
@@ -375,13 +427,16 @@ function page_section_add_more_js($form, $form_state) {
   $field = $field_state['field'];
 
   // Add a DIV around the delta receiving the Ajax effect.
-  $delta = $field_state['count_items']-1;
+  $delta = $field_state['count_items'] - 1;
   $element[$delta]['#prefix'] = '<div class="ajax-new-content">' . (isset($element[$delta]['#prefix']) ? $element[$delta]['#prefix'] : '');
   $element[$delta]['#suffix'] = (isset($element[$delta]['#suffix']) ? $element[$delta]['#suffix'] : '') . '</div>';
 
   return $element;
 }
 
+/**
+ * Form API submit callback for removing Page Sections.
+ */
 function page_section_remove_submit($form, &$form_state) {
   $button = $form_state['triggering_element'];
   $delta = $button['#delta'];
@@ -415,7 +470,7 @@ function page_section_remove_submit($form, &$form_state) {
     }
   }
 
-  $i = $field_state['count_items']-1;
+  $i = $field_state['count_items'] - 1;
   $removed_element_address = array_merge($address, array($i));
   $removed_element = drupal_array_get_nested_value($form, $removed_element_address);
   form_set_value($removed_element, NULL, $form_state);
@@ -430,7 +485,7 @@ function page_section_remove_submit($form, &$form_state) {
   }
 
   $input = drupal_array_get_nested_value($form_state['input'], $address);
-  // Sort by weight
+  // Sort by weight.
   uasort($input, '_field_sort_items_helper');
 
   // Reweight everything in the correct order.
@@ -447,6 +502,9 @@ function page_section_remove_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
+/**
+ * Form API Ajax callback for removing Page Sections.
+ */
 function page_section_remove_js($form, $form_state) {
   $button = $form_state['triggering_element'];
 
@@ -462,6 +520,9 @@ function page_section_remove_js($form, $form_state) {
   return $element;
 }
 
+/**
+ * Form API element validate callback for a page section entity form embed.
+ */
 function page_section_field_widget_page_section_form_validate($element, &$form_state, $complete_form) {
   $instance = field_widget_instance($element, $form_state);
   $field = field_widget_field($element, $form_state);
@@ -471,8 +532,7 @@ function page_section_field_widget_page_section_form_validate($element, &$form_s
 
   $field_state = field_form_get_state($field_parents, $field_name, $language, $form_state);
 
-  
-  for ($delta=0; $delta < $field_state['count_items']; $delta++) { 
+  for ($delta = 0; $delta < $field_state['count_items']; $delta++) {
     $page_section = $field_state['section'][$delta];
 
     // Attach field API validation of the embedded form.
@@ -483,14 +543,14 @@ function page_section_field_widget_page_section_form_validate($element, &$form_s
   // prepare it for saving.
   $items = array();
   if ($form_state['submitted'] && !form_get_errors()) {
-    for ($delta=0; $delta < $field_state['count_items']; $delta++) { 
+    for ($delta = 0; $delta < $field_state['count_items']; $delta++) {
       $page_section = $field_state['section'][$delta];
 
       // Attach field API validation of the embedded form.
       field_attach_submit('page_section', $page_section, $element[$delta], $form_state);
 
       // Load initial form values into $item, so any other form values below the
-      // same parents are kept. Fix found in field collection module issue 
+      // same parents are kept. Fix found in field collection module issue
       // http://drupal.org/node/1545584#comment-6171596
       $items[$delta] = drupal_array_get_nested_value($form_state['values'], $element[$delta]['#parents']);
 

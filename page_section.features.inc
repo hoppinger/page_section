@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Provides the Features integration for Page Section.
+ */
+
+/**
  * Implements hook_features_api().
  */
 function page_section_features_api() {
@@ -29,7 +34,7 @@ function page_section_features_export_options() {
 }
 
 /**
- * Implements hook_features_export.
+ * Implements hook_features_export().
  */
 function page_section_features_export($data, &$export, $module_name = '') {
   $pipe = array();
@@ -38,7 +43,8 @@ function page_section_features_export($data, &$export, $module_name = '') {
 
   foreach ($data as $type) {
     if (!empty($types[$type])) {
-      // If this node type is provided by a different module, add it as a dependency
+      // If this node type is provided by a different module, add it as a
+      // dependency.
       if (isset($map[$type]) && $map[$type] != $module_name) {
         $export['dependencies'][$map[$type]] = $map[$type];
       }
@@ -82,9 +88,6 @@ function page_section_features_export_render($module, $data, $export = NULL) {
 
 /**
  * Implements hook_features_revert().
- *
- * @param $module
- * name of module to revert content for
  */
 function page_section_features_revert($module = NULL) {
   if ($default_types = features_get_default('page_section', $module)) {

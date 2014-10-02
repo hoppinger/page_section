@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @file
+ * Installation logic for Page Section module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
 function page_section_schema() {
   $schema = array();
 
@@ -50,7 +58,7 @@ function page_section_schema() {
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-      )
+      ),
     ),
     'primary key' => array('name'),
   );
@@ -58,12 +66,15 @@ function page_section_schema() {
   return $schema;
 }
 
+/**
+ * Implements hook_field_schema().
+ */
 function page_section_field_schema($field) {
   return array(
     'columns' => array(
       'sid' => array(
         'type' => 'int',
-        'not null' => FALSE
+        'not null' => FALSE,
       ),
     ),
   );

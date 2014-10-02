@@ -1,10 +1,16 @@
 <?php
 
+/**
+ * @file
+ * Provide Page section field and entity.
+ */
+
 define('PAGE_SECTION_NOT_SAVED', 0x0000);
 define('PAGE_SECTION_CODE', 0x0001);
 define('PAGE_SECTION_DATABASE', 0x0002);
 define('PAGE_SECTION_OVERRIDE', PAGE_SECTION_CODE | PAGE_SECTION_DATABASE);
 
+// Load all Field module hooks for Page Section.
 require_once drupal_get_path('module', 'page_section') . '/page_section.field.inc';
 
 /**
@@ -52,6 +58,9 @@ function page_section_menu() {
   return $items;
 }
 
+/**
+ * Implements hook_theme().
+ */
 function page_section_theme() {
   return array(
     'page_section' => array(
@@ -79,7 +88,7 @@ function page_section_entity_info() {
       'label' => 'title',
     ),
     'bundle keys' => array(
-      'bundle' => 'name'
+      'bundle' => 'name',
     ),
     'bundles' => array(),
     'view modes' => array(
@@ -125,6 +134,9 @@ function page_section_type_info($reset = FALSE) {
   return $info;
 }
 
+/**
+ * Internal function to construct the list of available Page Section types.
+ */
 function _page_section_type_info() {
   $info = array();
 
@@ -173,34 +185,40 @@ function page_section_type_page_title($type) {
   return $type->label;
 }
 
+/**
+ * Save Page Section Type to the database.
+ */
 function page_section_type_save($type) {
   if ($type->status & PAGE_SECTION_DATABASE) {
     drupal_write_record('page_section_type', $type, array('name'));
   }
   else {
-    // insert
     drupal_write_record('page_section_type', $type);
     $type->status |= PAGE_SECTION_DATABASE;
   }
 
-  // reset the cache
+  // Reset the cache.
   page_section_type_info(TRUE);
   menu_rebuild();
 }
 
 /**
- * Entity load callbacks.
+ * Loads Page section entities from the database.
  */
 function page_section_load_multiple($sids) {
   return entity_load('page_section', $sids);
 }
+
+/**
+ * Loads a Page section entity from the database.
+ */
 function page_section_load($sid) {
   $sections = page_section_load_multiple(array($sid));
   return $sections ? reset($sections) : FALSE;
 }
 
 /**
- * Entity save callback.
+ * Saves a Page section entity to the database.
  */
 function page_section_save($section) {
   if (empty($section->created)) {
@@ -212,37 +230,51 @@ function page_section_save($section) {
 }
 
 /**
- * Entity delete callbacks.
+ * Removes Page section entities from the database.
  */
 function page_section_delete_multiple($sids) {
   return entity_delete_multiple('page_section', $sids);
 }
+
+/**
+ * Removes a Page section entity from the database.
+ */
 function page_section_delete($sid) {
   return entity_delete('page_section', $sid);
 }
 
 /**
- * Entity view callbacks.
+ * Renders a Page Section entity.
  */
 function page_section_view($section, $view_mode = 'full', $page = NULL) {
   return entity_view('page_section', array($section), $view_mode);
 }
+
+/**
+ * Renders Page Section entities.
+ */
 function page_section_view_multiple($sections, $view_mode = 'full', $page = NULL) {
   return entity_view('page_section', $sections, $view_mode, NULL, $page);
 }
 
 /**
- * Entity create callback.
+ * Creates a new Page Section entity.
  */
 function page_section_create($values) {
   $result = entity_create('page_section', $values);
   return $result;
 }
 
+/**
+ * Implements hook_page_section_view().
+ */
 function page_section_page_section_view($entity, $view_mode, $langcode) {
   $entity->content['#theme'] = 'page_section';
 }
 
+/**
+ * Processes variables for page-section.tpl.php.
+ */
 function template_preprocess_page_section(&$variables) {
   $page_section = $variables['page_section'] = $variables['elements']['#entity'];
   $page_section_wrapper = $variables['page_section_wrapper'] = entity_metadata_wrapper('page_section', $variables['page_section']);
