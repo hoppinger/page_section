@@ -50,7 +50,7 @@ function page_section_menu() {
     'file' => 'page_section.admin.inc',
   );
   $items['admin/structure/page-sections/manage/%page_section_type/edit'] = array(
-    'title' => t('Edit'),
+    'title' => 'Edit',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
