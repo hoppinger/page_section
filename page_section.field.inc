@@ -74,6 +74,10 @@ function page_section_field_is_empty($item, $field) {
 function page_section_section_is_empty($section) {
   $instances = field_info_instances('page_section', $section->type);
 
+  if (empty($instances)) {
+    return FALSE; // If there are no fields in the page section, we want to continue
+  }
+
   foreach ($instances as $instance) {
     $field_name = $instance['field_name'];
     $field = field_info_field($field_name);
