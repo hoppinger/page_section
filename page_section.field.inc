@@ -205,11 +205,19 @@ function page_section_field_formatter_view($entity_type, $entity, $field, $insta
 
       $sections = array();
       foreach ($items as $delta => $item) {
+        $section = NULL;
+
         if (!empty($item['section'])) {
-          $element[$delta] = page_section_view($item['section']);
+          $section = $item['section'];
         }
         elseif (!empty($item['sid']) && !empty($sections_loaded[$item['sid']])) {
-          $element[$delta] = page_section_view($sections_loaded[$item['sid']]);
+          $section = $sections_loaded[$item['sid']];
+        }
+
+        if (isset($section)) {
+          $section->host_entity_type = $entity_type;
+          $section->host_entity = $entity;
+          $element[$delta] = page_section_view($section);
         }
       }
       break;
