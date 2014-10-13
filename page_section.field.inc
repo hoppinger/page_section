@@ -267,8 +267,16 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       return $element;
     }
 
+    $type_info = page_section_type_info();
+    $referenceable_types = empty($field['settings']['referenceable_types']) ? array_keys($type_info) : array_keys(array_filter($field['settings']['referenceable_types']));
+
     if (!isset($field_state['count_items'])) {
       $field_state['count_items'] = count($items);
+
+      if ($field_state['count_items'] == 0 && count($referenceable_types) == 1) {
+        $field_state['section'][0] = page_section_create(array('type' => $referenceable_types[0]));
+        $field_state['count_items'] = 1;
+      }
     }
 
     $multiple = $field['cardinality'] > 1 || $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED;
@@ -303,6 +311,8 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       $element[$delta] = array(
         '#parents' => $delta_parents,
         '#delta' => $delta,
+        '#required' => $delta == 0 && $instance['required'],
+        '#weight' => $delta,
       );
 
       if ($multiple) {
@@ -353,6 +363,10 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         ),
         '#weight' => 1000,
       );
+
+      if (empty($element[$delta]['#required'])) {
+        $element[$delta]['#after_build'][] = 'page_section_field_widget_delay_required_validation';
+      }
     }
 
     field_form_set_state($field_parents, $field_name, $language, $form_state, $field_state);
@@ -361,8 +375,6 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
       '#access' => ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) || ($field['cardinality'] > $field_state['count_items']),
     );
 
-    $type_info = page_section_type_info();
-    $referenceable_types = empty($field['settings']['referenceable_types']) ? array_keys($type_info) : array_keys(array_filter($field['settings']['referenceable_types']));
     foreach ($type_info as $type => $info) {
       if (!in_array($type, $referenceable_types)) {
         continue;
@@ -389,6 +401,36 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
     $recursion--;
   }
 
+  return $element;
+}
+
+function page_section_field_widget_delay_required_validation(&$element, &$form_state) {
+  // If the process_input flag is set, the form and its input is going to be
+  // validated. Prevent #required (sub)fields from throwing errors while
+  // their non-#required page section is empty.
+  if ($form_state['process_input']) {
+    _page_section_collect_required_elements($element, $element['#page_section_required_elements']);
+  }
+  return $element;
+}
+
+function _page_section_collect_required_elements(&$element, &$required_elements) {
+  // Recurse through all children.
+  foreach (element_children($element) as $key) {
+    if (isset($element[$key]) && $element[$key]) {
+      _page_section_collect_required_elements($element[$key], $required_elements);
+    }
+  }
+  if (!empty($element['#required'])) {
+    $element['#required'] = FALSE;
+    $required_elements[] = &$element;
+    $element += array('#pre_render' => array());
+    array_unshift($element['#pre_render'], 'page_section_field_widget_render_required');
+  }
+}
+
+function page_section_field_widget_render_required($element) {
+  $element['#required'] = TRUE;
   return $element;
 }
 
@@ -545,6 +587,26 @@ function page_section_field_widget_page_section_form_validate($element, &$form_s
 
     // Attach field API validation of the embedded form.
     field_attach_form_validate('page_section', $page_section, $element[$delta], $form_state);
+
+    if (!page_section_section_is_empty($page_section) && !empty($element[$delta]['#page_section_required_elements'])) {
+      foreach ($element[$delta]['#page_section_required_elements'] as &$elements) {
+
+        if (isset($elements['#needs_validation'])) {
+          $is_empty_multiple = (!count($elements['#value']));
+          $is_empty_string = (is_string($elements['#value']) && drupal_strlen(trim($elements['#value'])) == 0);
+          $is_empty_value = ($elements['#value'] === 0);
+          $is_empty_option = (isset($elements['#options']['_none']) && $elements['#value'] == '_none');
+          if ($is_empty_multiple || $is_empty_string || $is_empty_value || $is_empty_option) {
+            if (isset($elements['#title'])) {
+              form_error($elements, t('!name field is required.', array('!name' => $elements['#title'])));
+            }
+            else {
+              form_error($elements);
+            }
+          }
+        }
+      }
+    }
   }
 
   // Only if the form is being submitted, finish the collection entity and
