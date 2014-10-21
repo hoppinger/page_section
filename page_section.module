@@ -167,6 +167,8 @@ function _page_section_type_info() {
     );
   }
 
+  drupal_alter('page_section_type_info', $info);
+
   uasort($info, '_page_section_type_info_sort_weight');
 
   return $info;
