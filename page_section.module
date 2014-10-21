@@ -149,6 +149,7 @@ function _page_section_type_info() {
       $_info['name'] = $name;
       $_info['module'] = $module;
       $_info['status'] = PAGE_SECTION_CODE;
+      $_info['weight'] = !empty($_info['weight']) ? $_info['weight'] : 0;
       $info[$name] = (object) $_info;
     }
   }
@@ -162,10 +163,23 @@ function _page_section_type_info() {
       'label' => $row->label,
       'module' => 'page_section',
       'status' => isset($info[$row->name]) ? PAGE_SECTION_OVERRIDE : PAGE_SECTION_DATABASE,
+      'weight' => 0,
     );
   }
 
+  uasort($info, '_page_section_type_info_sort_weight');
+
   return $info;
+}
+
+function _page_section_type_info_sort_weight($a, $b) {
+  $a_weight = isset($a->weight) ? $a->weight : 0;
+  $b_weight = isset($b->weight) ? $b->weight : 0;
+  
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
 }
 
 /**
