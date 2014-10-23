@@ -91,39 +91,6 @@ function page_section_field_is_empty($item, $field) {
 }
 
 /**
- * Determine if a Page Section is empty.
- */
-function page_section_section_is_empty($section) {
-  $instances = field_info_instances('page_section', $section->type);
-
-  if (empty($instances)) {
-    return FALSE; // If there are no fields in the page section, we want to continue
-  }
-
-  foreach ($instances as $instance) {
-    $field_name = $instance['field_name'];
-    $field = field_info_field($field_name);
-
-    // Determine the list of languages to iterate on.
-    $languages = field_available_languages('page_section', $field);
-
-    foreach ($languages as $langcode) {
-      if (!empty($section->{$field_name}[$langcode])) {
-        // If at least one section-field is not empty; the
-        // page section is not empty.
-        foreach ($section->{$field_name}[$langcode] as $field_item) {
-          if (!module_invoke($field['module'], 'field_is_empty', $field_item, $field)) {
-            return FALSE;
-          }
-        }
-      }
-    }
-  }
-
-  return TRUE;
-}
-
-/**
  * Implements hook_field_formatter_info().
  */
 function page_section_field_formatter_info() {
