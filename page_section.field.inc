@@ -313,6 +313,11 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         $field_state['section'][$delta] = $page_section;
       }
 
+      $element[$delta]['_label'] = array(
+        '#weight' => -1000,
+        '#markup' => '<div style="float: right; text-align: right; font-weight: bold; font-size: 1.5em;">' . check_plain(t($type_info[$page_section->type]->label)) . '</div>',
+      );
+
       field_attach_form('page_section', $page_section, $element[$delta], $form_state, $language);
 
       $element[$delta]['remove_button'] = array(
