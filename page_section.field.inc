@@ -184,7 +184,7 @@ function page_section_field_formatter_view($entity_type, $entity, $field, $insta
         if (isset($section)) {
           $section->host_entity_type = $entity_type;
           $section->host_entity = $entity;
-          $element[$delta] = page_section_view($section);
+          $element[$delta] = page_section_view($section, $view_mode);
         }
       }
       break;
