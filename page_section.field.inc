@@ -205,8 +205,28 @@ function page_section_field_widget_info() {
         'multiple values' => FIELD_BEHAVIOR_CUSTOM,
         'default value' => FIELD_BEHAVIOR_DEFAULT,
       ),
+      'settings' => array(
+        'collapsible' => FALSE,
+      )
     ),
   );
+}
+
+function page_section_field_widget_settings_form($field, $instance) {
+  $widget   = $instance['widget'];
+  $defaults = field_info_widget_settings($widget['type']);
+  $settings = array_merge($defaults, $widget['settings']);
+
+  $form = array();
+  if ($widget['type'] == 'page_section_form') {
+    $form['collapsible'] = array(
+      '#type'             => 'checkbox',
+      '#title'            => t('collapsible'),
+      '#default_value'    => $settings['collapsible'],
+      '#description'      => t('Collapse the page sections in the form.'),
+    );
+  }
+  return $form;
 }
 
 /**
@@ -215,13 +235,17 @@ function page_section_field_widget_info() {
 function page_section_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   static $recursion = 0;
 
-  if ($instance['widget']['type'] == 'page_section_form') {
+  $widget = $instance['widget'];
+
+  if ($widget['type'] == 'page_section_form') {
     $parents = $form['#parents'];
 
     $page_section_types = page_section_type_info();
     $field_parents = $element['#field_parents'];
     $field_name = $element['#field_name'];
     $language = $element['#language'];
+
+    $widget_settings = $widget['settings'];
 
     $field_state = field_form_get_state($field_parents, $field_name, $language, $form_state);
     $field = $field_state['field'];
@@ -313,13 +337,29 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
         $field_state['section'][$delta] = $page_section;
       }
 
-      field_attach_form('page_section', $page_section, $element[$delta], $form_state, $language);
+      $section_parents = $delta_parents;
+      $section_parents[] = '_section';
+
+      $element[$delta]['_section'] = array(
+        '#parents' => $section_parents,
+        '#type' => 'fieldset',
+        '#title' => t($type_info[$page_section->type]->label),
+      );
+
+      if (!empty($widget_settings['collapsible'])) {
+        $element[$delta]['_section'] += array(
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+        );
+      }
+
+      field_attach_form('page_section', $page_section, $element[$delta]['_section'], $form_state, $language);
 
       $element[$delta]['remove_button'] = array(
         '#delta' => $delta,
         '#name' => implode('_', $delta_parents) . '_remove_button',
         '#type' => 'submit',
-        '#value' => t('Remove !bundle', array('!bundle' => $page_section_types[$element[$delta]['#bundle']]->label)),
+        '#value' => t('Remove !bundle', array('!bundle' => $page_section_types[$page_section->type]->label)),
         '#validate' => array(),
         '#submit' => array('page_section_remove_submit'),
         '#limit_validation_errors' => array(),
@@ -384,8 +424,8 @@ function page_section_field_widget_delay_required_validation(&$element, &$form_s
 function _page_section_collect_required_elements(&$element, &$required_elements) {
   // Recurse through all children.
   foreach (element_children($element) as $key) {
-    if (isset($element[$key]) && $element[$key]) {
-      _page_section_collect_required_elements($element[$key], $required_elements);
+    if (isset($element[$key]) && $element[$key] && isset($element[$key]['_section']) && $element[$key]['section']) {
+      _page_section_collect_required_elements($element[$key]['_section'], $required_elements);
     }
   }
   if (!empty($element['#required'])) {
@@ -553,7 +593,7 @@ function page_section_field_widget_page_section_form_validate($element, &$form_s
     $page_section = $field_state['section'][$delta];
 
     // Attach field API validation of the embedded form.
-    field_attach_form_validate('page_section', $page_section, $element[$delta], $form_state);
+    field_attach_form_validate('page_section', $page_section, $element[$delta]['_section'], $form_state);
 
     if (!page_section_section_is_empty($page_section) && !empty($element[$delta]['#page_section_required_elements'])) {
       foreach ($element[$delta]['#page_section_required_elements'] as &$elements) {
@@ -584,7 +624,7 @@ function page_section_field_widget_page_section_form_validate($element, &$form_s
       $page_section = $field_state['section'][$delta];
 
       // Attach field API validation of the embedded form.
-      field_attach_submit('page_section', $page_section, $element[$delta], $form_state);
+      field_attach_submit('page_section', $page_section, $element[$delta]['_section'], $form_state);
 
       // Load initial form values into $item, so any other form values below the
       // same parents are kept. Fix found in field collection module issue
