@@ -53,8 +53,17 @@ function page_section_field_settings_form($field, $instance, $has_data) {
 function page_section_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as &$item) {
     if (isset($item['section'])) {
-      page_section_save($item['section']);
-      $item = array('sid' => $item['section']->sid);
+      if (revisioning_content_is_moderated($entity->type) && !isset($item['section']->is_new)) {
+        // make a copy if using revisions
+        $new = entity_create('page_section', array('type' => $item['section']->type));
+        page_section_save($new); // to get the sid
+        $item['section']->sid = $new->sid;
+        page_section_save($item['section']);
+        $item = array('sid' => $new->sid);
+      } else {
+        page_section_save($item['section']);
+        $item = array('sid' => $item['section']->sid);
+      }
     }
   }
 }
