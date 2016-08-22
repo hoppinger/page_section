@@ -207,6 +207,7 @@ function page_section_field_widget_info() {
       ),
       'settings' => array(
         'collapsible' => FALSE,
+        'collapsed' => 'all',
       )
     ),
   );
@@ -224,6 +225,18 @@ function page_section_field_widget_settings_form($field, $instance) {
       '#title'            => t('collapsible'),
       '#default_value'    => $settings['collapsible'],
       '#description'      => t('Collapse the page sections in the form.'),
+    );
+
+    $form['collapsed'] = array(
+      '#type'             => 'select',
+      '#title'            => t('collapsed'),
+      '#default_value'    => $settings['collapsed'],
+      '#options'          => array(
+        'all' => 'All page sections are collapsed',
+        'all_but_first' => 'All page sections, except the first, are collapsed',
+        'none' => 'All page sections are not collapsed',
+      ),
+      '#description'      => t('If the page sections are collapsible, what should the default state be?'),
     );
   }
   return $form;
@@ -351,6 +364,15 @@ function page_section_field_widget_form(&$form, &$form_state, $field, $instance,
           '#collapsible' => TRUE,
           '#collapsed' => TRUE,
         );
+
+        if (!empty($widget_settings['collapsed'])) {
+          if (
+            ($widget_settings['collapsed'] == 'none') ||
+            ($widget_settings['collapsed'] == 'all_but_first' && $delta == 0)
+          ) {
+            $element[$delta]['_section']['#collapsed'] = FALSE;
+          }
+        }
       }
 
       field_attach_form('page_section', $page_section, $element[$delta]['_section'], $form_state, $language);
