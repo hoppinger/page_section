@@ -354,3 +354,92 @@ function template_preprocess_page_section(&$variables) {
   $variables['theme_hook_suggestions'][] = 'page_section__' . $page_section->type;
   $variables['theme_hook_suggestions'][] = 'page_section__' . $page_section->type . '__' . $view_mode;
 }
+
+/**
+ * Implements hook_clone_node_alter().
+ */
+function page_section_clone_node_alter(&$node, $context) {
+  foreach (field_info_fields() as $field_name => $field) {
+    if ($field['type'] == 'page_section' && isset($node->$field_name)) {
+      $language = $node->language;
+      foreach ($node->$field_name as $key => $values) {
+        page_section_clone_sections('node', $node, $field_name, $language);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function page_section_form_node_form_alter(&$form, &$form_state, $form_id) {
+  // Alter the node edit forms for cloned nodes.
+  if (('clone' == arg(2)) && ('_node_form' == substr($form_id, -10))) {
+    // Go through all fields.
+    foreach ($form_state['field'] as &$field_config) {
+      $language = key($field_config);
+      // Only find fields containing page_section items.
+      if (isset($field_config[$language]['field']['type']) && ($field_config[$language]['field']['type'] == 'page_section')) {
+        // Unset the item_id and revision_id of each page_section item so
+        // that new items are created on save.
+        foreach ($field_config as $language => $items) {
+          foreach ($items as $item) {
+            if (!empty($item['section'])) {
+              $item['section']->sid = NULL
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Clone a list of page_sections. Helper function for hook_clone_node_alter().
+ */
+function page_section_clone_sections($entity_type, &$entity, $field_name, $language = LANGUAGE_NONE) {
+  if (empty($entity->{$field_name})) {
+    return;
+  }
+
+  if (empty($entity->{$field_name}[$language])) {
+    return;
+  }
+
+  $old_items = $entity->{$field_name}[$language];
+  $new_items = array();
+
+  foreach ($old_items as $old_item) {
+    if (empty($old_item['sid'])) {
+      continue;
+    }
+
+    $page_section = page_section_load($item['sid']);
+    if (empty($page_section)) {
+      continue;
+    }
+
+    $new_items[] = array(
+      'section' => page_section_clone_section($page_section, $language);
+    );
+  }
+
+  $entity->{$field_name}[$language] = $new_items;
+}
+
+function page_section_clone_section($section, $language) {
+  list( , , $bundle) = entity_extract_ids('page_section', $section);
+  $new_section = entity_create('page_section', array('type' => $bundle));
+
+  foreach (field_info_instances('page_section', $bundle) as $field_name => $field_instance) {
+    if (!empty($section->{$field_name})) {
+      $new_section->{$field_name} = $section->{$field_name};
+      $field_info = field_info_field($field_name);
+      if ($field_info['type'] == 'page_section') {
+        page_section_clone_sections('page_section', $new_section, $field_name, $language);
+      }
+    }
+  }
+
+  return $new_section;
+}
