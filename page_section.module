@@ -359,11 +359,14 @@ function template_preprocess_page_section(&$variables) {
  * Implements hook_clone_node_alter().
  */
 function page_section_clone_node_alter(&$node, $context) {
+  page_section_clone_handle_entity($node);
+}
+
+function page_section_clone_handle_entity(&$entity) {
   foreach (field_info_fields() as $field_name => $field) {
-    if ($field['type'] == 'page_section' && isset($node->$field_name)) {
-      $language = $node->language;
-      foreach ($node->$field_name as $key => $values) {
-        page_section_clone_sections('node', $node, $field_name, $language);
+    if ($field['type'] == 'page_section' && isset($entity->$field_name)) {
+      foreach ($entity->$field_name as $key => $values) {
+        page_section_clone_sections('node', $entity, $field_name, $key);
       }
     }
   }
@@ -385,7 +388,7 @@ function page_section_form_node_form_alter(&$form, &$form_state, $form_id) {
         foreach ($field_config as $language => $items) {
           foreach ($items as $item) {
             if (!empty($item['section'])) {
-              $item['section']->sid = NULL
+              $item['section']->sid = NULL;
             }
           }
         }
@@ -414,13 +417,13 @@ function page_section_clone_sections($entity_type, &$entity, $field_name, $langu
       continue;
     }
 
-    $page_section = page_section_load($item['sid']);
+    $page_section = page_section_load($old_item['sid']);
     if (empty($page_section)) {
       continue;
     }
 
     $new_items[] = array(
-      'section' => page_section_clone_section($page_section, $language);
+      'section' => page_section_clone_section($page_section, $language),
     );
   }
 
@@ -434,12 +437,10 @@ function page_section_clone_section($section, $language) {
   foreach (field_info_instances('page_section', $bundle) as $field_name => $field_instance) {
     if (!empty($section->{$field_name})) {
       $new_section->{$field_name} = $section->{$field_name};
-      $field_info = field_info_field($field_name);
-      if ($field_info['type'] == 'page_section') {
-        page_section_clone_sections('page_section', $new_section, $field_name, $language);
-      }
     }
   }
+
+  page_section_clone_handle_entity($new_section);
 
   return $new_section;
 }
